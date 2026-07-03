@@ -1,0 +1,8 @@
+node_modules
+.next
+.env*.local
+*.pkl
+.DS_Store
+next-env.d.ts
+dist/
+dist.zip
