@@ -27,6 +27,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 
 export default function MentalHealthPage() {
   const [tab, setTab] = useState<Tab>('chat')
+  const [menuOpen, setMenuOpen] = useState(false)
   const [onboarding, setOnboarding] = useState(true)
   const [locked, setLocked] = useState(true)
   const [unlockPin, setUnlockPin] = useState('')
@@ -337,8 +338,8 @@ export default function MentalHealthPage() {
               </button>
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-surface-50">
-            Mindful Space
+            <h1 className="text-2xl sm:text-3xl font-heading font-bold text-surface-50">
+            Solce
           </h1>
           <p className="text-surface-400 text-xs sm:text-sm mt-1 max-w-md">
             Your private sanctuary. Chat, track, journal, and grow — all encrypted on your device.
@@ -409,22 +410,36 @@ export default function MentalHealthPage() {
           </Card>
         )}
 
-        {/* Tab nav */}
-        <div className="flex justify-center gap-1 mb-6 p-1 rounded-xl bg-surface-900/60 border border-surface-800 overflow-x-auto">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                tab === t.id
-                  ? 'bg-surface-800 text-surface-50 shadow-sm'
-                  : 'text-surface-500 hover:text-surface-300'
-              }`}
-            >
-              <span>{t.icon}</span>
-              <span className="hidden sm:inline">{t.label}</span>
-            </button>
-          ))}
+        {/* Hamburger menu */}
+        <div className="relative mb-6">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-900/60 border border-surface-800 text-surface-300 hover:text-surface-50 transition-colors w-full"
+          >
+            <span className="text-lg">{TABS.find(t => t.id === tab)?.icon}</span>
+            <span className="text-sm font-medium">{TABS.find(t => t.id === tab)?.label}</span>
+            <span className="ml-auto text-surface-500">{menuOpen ? '▲' : '▼'}</span>
+          </button>
+
+          {menuOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 p-1 rounded-xl bg-surface-900 border border-surface-800 shadow-xl z-20">
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => { setTab(t.id); setMenuOpen(false) }}
+                  className={`flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    tab === t.id
+                      ? 'bg-surface-800 text-surface-50'
+                      : 'text-surface-500 hover:text-surface-300 hover:bg-surface-800/50'
+                  }`}
+                >
+                  <span>{t.icon}</span>
+                  <span>{t.label}</span>
+                  {tab === t.id && <span className="ml-auto text-[10px] text-cyan-500">●</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <Card className="border-surface-800 bg-surface-900/60 backdrop-blur">

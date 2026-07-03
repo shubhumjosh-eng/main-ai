@@ -69,17 +69,18 @@ export function EmergencyButton() {
                 </div>
               </a>
 
-              <button
-                onClick={() => {
-                  document.title = 'Weather Forecast'
-                  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#1a1a2e;color:white;font-family:sans-serif;"><div style="text-align:center;"><h1 style="font-size:2rem;margin-bottom:1rem;">☀️ Weather</h1><p style="color:#888;">Loading forecast...</p></div></div>'
-                  history.pushState({}, '', '/weather')
-                  setTimeout(() => { window.location.href = 'https://weather.com' }, 500)
-                }}
-                className="w-full p-3 rounded-xl border border-amber-700/50 bg-amber-900/20 text-amber-300 text-sm font-medium hover:bg-amber-900/30 transition-colors"
+              <a
+                href="tel:18111"
+                className="flex items-center gap-3 p-4 rounded-xl bg-surface-800/60 border border-surface-700 hover:bg-surface-800 transition-colors group"
               >
-                🚪 Quick Exit (Hide Page)
-              </button>
+                <span className="text-3xl">🏥</span>
+                <div>
+                  <p className="text-sm font-semibold text-surface-50 group-hover:text-cyan-300 transition-colors">
+                    Mental Health Support Hotline
+                  </p>
+                  <p className="text-xs text-surface-400">24-hour — call 18111</p>
+                </div>
+              </a>
             </div>
 
             <Button variant="ghost" onClick={() => setOpen(false)} className="w-full text-surface-400">
