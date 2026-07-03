@@ -1,16 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const HF_TOKEN = process.env.HF_TOKEN || ''
-const HF_API = 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium'
+const HF_API = 'https://router.huggingface.co/v1/chat/completions'
 
 export async function POST(req: NextRequest) {
   try {
     const { message, history } = await req.json()
     if (!message) return NextResponse.json({ error: 'No message' }, { status: 400 })
 
-    const prompt = history && history.length > 0
-      ? history.map((m: { role: string; text: string }) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n') + `\nUser: ${message}\nAssistant:`
-      : `User: ${message}\nAssistant:`
+    const system = {
+      role: 'system',
+      content: 'You are a warm, supportive mental wellness companion. Respond with empathy, be concise (2-4 sentences), ask gentle follow-up questions. Never provide medical advice — encourage professional help when needed. Use an encouraging, non-judgmental tone.'
+    }
+
+    const messages = [system]
+    if (history && history.length > 0) {
+      for (const m of history.slice(-6)) {
+        if (m.role === 'user' || m.role === 'bot') {
+          messages.push({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text })
+        }
+      }
+    }
+    messages.push({ role: 'user', content: message })
 
     const res = await fetch(HF_API, {
       method: 'POST',
@@ -19,8 +30,11 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        inputs: prompt,
-        parameters: { max_new_tokens: 256, temperature: 0.7, top_p: 0.9, do_sample: true, return_full_text: false },
+        model: 'google/gemma-3-4b-it',
+        messages,
+        max_tokens: 256,
+        temperature: 0.8,
+        top_p: 0.9,
       }),
     })
 
@@ -31,9 +45,9 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json()
-    const reply = data?.[0]?.generated_text?.trim() || ''
+    const reply = data?.choices?.[0]?.message?.content?.trim() || ''
 
-    return NextResponse.json({ reply, model: 'DialoGPT-medium' })
+    return NextResponse.json({ reply, model: 'gemma-3-4b-it' })
   } catch (err) {
     console.error('Chat API error:', err)
     return NextResponse.json({ error: 'AI service unavailable', fallback: true }, { status: 200 })
