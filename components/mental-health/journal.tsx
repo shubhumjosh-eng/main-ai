@@ -123,14 +123,17 @@ export function Journal({ shareWithPro }: { shareWithPro: boolean }) {
               {sending ? 'Sending...' : 'Save Entry'}
             </Button>
             {shareWithPro && (
-              <label className="flex items-center gap-2 text-[10px] text-surface-400 cursor-pointer">
+              <label className="flex items-center gap-2.5 p-2.5 rounded-lg bg-cyan-900/20 border border-cyan-800/40 cursor-pointer hover:bg-cyan-900/30 transition-colors">
                 <input
                   type="checkbox"
                   checked={sendToPro}
                   onChange={e => setSendToPro(e.target.checked)}
-                  className="rounded border-surface-600 bg-surface-800"
+                  className="rounded border-cyan-600 bg-surface-800 accent-cyan-500 size-3.5"
                 />
-                Send as letter to my professional
+                <div>
+                  <span className="text-[11px] font-medium text-cyan-300">Send as letter to my professional</span>
+                  <p className="text-[8px] text-cyan-500/70">Your entry will be shared anonymously with your connected professional</p>
+                </div>
               </label>
             )}
           </div>

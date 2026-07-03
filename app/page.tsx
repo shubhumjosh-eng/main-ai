@@ -8,19 +8,21 @@ import { EmergencyButton } from '@/components/mental-health/emergency-button'
 import { Chatbot } from '@/components/mental-health/chatbot'
 import { MoodTracker } from '@/components/mental-health/mood-tracker'
 import { Journal } from '@/components/mental-health/journal'
-import { GoalSetting } from '@/components/mental-health/goal-setting'
+import { ArticleDay } from '@/components/mental-health/article-day'
+import { SeekHelp } from '@/components/mental-health/seek-help'
 import { Meditation } from '@/components/mental-health/meditation'
 import { unlockStorage, isVaultCreated, isUnlocked, setItem, getItem, lockStorage } from '@/lib/encrypted-storage'
 import { saveMood, getMoods } from '@/lib/mood-storage'
 
-type Tab = 'chat' | 'mood' | 'journal' | 'goals' | 'meditate' | 'settings'
+type Tab = 'chat' | 'mood' | 'journal' | 'article' | 'meditate' | 'help' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'chat', label: 'Chat', icon: '💬' },
   { id: 'mood', label: 'Mood', icon: '😊' },
   { id: 'journal', label: 'Journal', icon: '📝' },
-  { id: 'goals', label: 'Goals', icon: '🎯' },
+  { id: 'article', label: 'Article', icon: '📖' },
   { id: 'meditate', label: 'Meditate', icon: '🧘' },
+  { id: 'help', label: 'Help', icon: '🆘' },
 ]
 
 export default function MentalHealthPage() {
@@ -435,8 +437,9 @@ export default function MentalHealthPage() {
             )}
             {tab === 'mood' && <MoodTracker />}
             {tab === 'journal' && <Journal shareWithPro={shareWithPro} />}
-            {tab === 'goals' && <GoalSetting />}
+            {tab === 'article' && <ArticleDay />}
             {tab === 'meditate' && <Meditation />}
+            {tab === 'help' && <SeekHelp />}
             {tab === 'settings' && (
               <div className="text-center text-surface-500 text-sm py-8">
                 Settings panel above. Click ⚙️ to configure.
