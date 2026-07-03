@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Solce — Mental Wellness',
+  title: 'Solace — Mental Wellness',
   description: 'Multi-agent collaboration platform with AI-powered task execution',
 };
 

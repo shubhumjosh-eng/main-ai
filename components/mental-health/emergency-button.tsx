@@ -27,58 +27,54 @@ export function EmergencyButton() {
 
             <div className="space-y-3">
               <a
-                href="tel:988"
+                href="tel:999"
                 className="flex items-center gap-3 p-4 rounded-xl bg-red-900/30 border border-red-800/40 hover:bg-red-900/50 transition-colors group"
               >
-                <span className="text-3xl">📞</span>
+                <span className="text-3xl">🚨</span>
                 <div>
                   <p className="text-sm font-semibold text-surface-50 group-hover:text-red-300 transition-colors">
-                    988 Suicide & Crisis Lifeline
+                    Emergency — Police
                   </p>
-                  <p className="text-xs text-surface-400">Call or text — free, confidential, 24/7</p>
-                </div>
-              </a>
-
-              <a
-                href="https://988lifeline.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-4 rounded-xl bg-surface-800/60 border border-surface-700 hover:bg-surface-800 transition-colors group"
-              >
-                <span className="text-3xl">💬</span>
-                <div>
-                  <p className="text-sm font-semibold text-surface-50 group-hover:text-cyan-300 transition-colors">
-                    Crisis Text Line
-                  </p>
-                  <p className="text-xs text-surface-400">Text HOME to 741741</p>
-                </div>
-              </a>
-
-              <a
-                href="https://samhsa.gov/find-help/national-helpline"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-4 rounded-xl bg-surface-800/60 border border-surface-700 hover:bg-surface-800 transition-colors group"
-              >
-                <span className="text-3xl">🏥</span>
-                <div>
-                  <p className="text-sm font-semibold text-surface-50 group-hover:text-cyan-300 transition-colors">
-                    SAMHSA Helpline
-                  </p>
-                  <p className="text-xs text-surface-400">1-800-662-4357 — 24/7 treatment referral</p>
+                  <p className="text-xs text-surface-400">Call 999 — life-threatening emergencies</p>
                 </div>
               </a>
 
               <a
                 href="tel:18111"
+                className="flex items-center gap-3 p-4 rounded-xl bg-red-900/30 border border-orange-800/40 hover:bg-red-900/50 transition-colors group"
+              >
+                <span className="text-3xl">📞</span>
+                <div>
+                  <p className="text-sm font-semibold text-surface-50 group-hover:text-red-300 transition-colors">
+                    Mental Health Support Hotline
+                  </p>
+                  <p className="text-xs text-surface-400">Call 18111 — 24-hour emotional support</p>
+                </div>
+              </a>
+
+              <a
+                href="tel:23892222"
+                className="flex items-center gap-3 p-4 rounded-xl bg-surface-800/60 border border-surface-700 hover:bg-surface-800 transition-colors group"
+              >
+                <span className="text-3xl">💬</span>
+                <div>
+                  <p className="text-sm font-semibold text-surface-50 group-hover:text-cyan-300 transition-colors">
+                    Samaritan Befrienders HK
+                  </p>
+                  <p className="text-xs text-surface-400">Call 2389 2222 — 24-hour suicide prevention</p>
+                </div>
+              </a>
+
+              <a
+                href="tel:28960000"
                 className="flex items-center gap-3 p-4 rounded-xl bg-surface-800/60 border border-surface-700 hover:bg-surface-800 transition-colors group"
               >
                 <span className="text-3xl">🏥</span>
                 <div>
                   <p className="text-sm font-semibold text-surface-50 group-hover:text-cyan-300 transition-colors">
-                    Mental Health Support Hotline
+                    The Samaritans HK
                   </p>
-                  <p className="text-xs text-surface-400">24-hour — call 18111</p>
+                  <p className="text-xs text-surface-400">Call 2896 0000 — 24-hour multilingual support</p>
                 </div>
               </a>
             </div>

@@ -88,7 +88,7 @@ export default function MentalHealthPage() {
       ]
       for (const s of schedule) {
         if (h === s.hour && m < 5) {
-          new Notification('Mindful Space', {
+          new Notification('Solace', {
             body: `Good ${s.label}! How are you feeling? 🌅`,
           })
           localStorage.setItem('mh-last-reminder-date', today)
@@ -186,7 +186,7 @@ export default function MentalHealthPage() {
     const result = await Notification.requestPermission()
     if (result === 'granted') {
       setNotificationsGranted(true)
-      new Notification('Mindful Space', { body: 'You\'ll get gentle mood reminders 3 times a day 💙' })
+      new Notification('Solace', { body: 'You\'ll get gentle mood reminders 3 times a day 💙' })
     }
   }
 
@@ -208,7 +208,7 @@ export default function MentalHealthPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `mindful-space-export-${Date.now()}.json`
+      a.download = `solace-export-${Date.now()}.json`
       a.click()
       URL.revokeObjectURL(url)
       setExportStatus('Data exported successfully!')
@@ -339,7 +339,7 @@ export default function MentalHealthPage() {
             </div>
           </div>
             <h1 className="text-2xl sm:text-3xl font-heading font-bold text-surface-50">
-            Solce
+            Solace
           </h1>
           <p className="text-surface-400 text-xs sm:text-sm mt-1 max-w-md">
             Your private sanctuary. Chat, track, journal, and grow — all encrypted on your device.
