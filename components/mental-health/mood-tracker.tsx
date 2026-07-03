@@ -137,6 +137,51 @@ export function MoodTracker() {
               </div>
             )}
 
+            {periodEntries.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-surface-500 uppercase tracking-wider">Trend</p>
+                <svg viewBox="0 0 280 100" className="w-full h-auto" preserveAspectRatio="none">
+                  {(() => {
+                    const barW = Math.max(4, Math.min(20, 240 / Math.max(periodEntries.length, 1)))
+                    const gap = Math.max(1, Math.min(6, barW * 0.4))
+                    const moodValues: Record<string, number> = { great: 8, good: 6.5, peaceful: 7, okay: 5, down: 3.5, anxious: 3, rough: 2, frustrated: 2.5 }
+                    const moodColors: Record<string, string> = { great: '#34d399', good: '#60a5fa', peaceful: '#5eead4', okay: '#fbbf24', down: '#fb923c', anxious: '#a78bfa', rough: '#f87171', frustrated: '#f43f5e' }
+                    const days = periodEntries.slice(-14)
+                    const size = days.length
+                    const w = 240
+                    const h = 80
+                    const xOff = 30
+                    const yOff = 10
+                    const plotW = w - xOff - 10
+                    const plotH = h - yOff - 15
+                    const stepX = size > 1 ? plotW / (size - 1) : plotW / 2
+                    const points = days.map((e, i) => {
+                      const x = xOff + (size > 1 ? i * stepX : plotW / 2)
+                      const v = moodValues[e.mood.toLowerCase()] || 5
+                      const y = yOff + plotH - (v / 8) * plotH
+                      return { x, y, color: moodColors[e.mood.toLowerCase()] || '#6b7280', emoji: e.emoji || '😐', mood: e.mood }
+                    })
+                    return (
+                      <>
+                        {[2, 4, 6, 8].map(v => (
+                          <text key={v} x={xOff - 4} y={yOff + plotH - (v / 8) * plotH + 1} textAnchor="end" className="fill-surface-500" fontSize="6">{v}</text>
+                        ))}
+                        {points.map((p, i) => (
+                          i > 0 && <line key={`l${i}`} x1={points[i-1].x} y1={points[i-1].y} x2={p.x} y2={p.y} stroke={p.color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                        ))}
+                        {points.map((p, i) => (
+                          <g key={`p${i}`}>
+                            <circle cx={p.x} cy={p.y} r="3.5" fill={p.color} stroke="#0f172a" strokeWidth="1" />
+                            <text x={p.x} y={p.y - 8} textAnchor="middle" fontSize="9">{p.emoji}</text>
+                          </g>
+                        ))}
+                      </>
+                    )
+                  })()}
+                </svg>
+              </div>
+            )}
+
             {periodEntries.length === 0 && (
               <p className="text-center text-surface-500 text-sm py-6">No mood entries yet.</p>
             )}
