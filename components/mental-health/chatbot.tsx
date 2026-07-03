@@ -82,7 +82,38 @@ export function Chatbot({ onMoodDetected, onRiskDetected }: {
       timestamp: Date.now(),
     }
 
-    const botText = generateResponse(emotion, personality, language)
+    const riskCallbacks = () => {
+      if (emotion.primary !== 'neutral' && onMoodDetected) {
+        onMoodDetected({
+          emotion: emotion.primary,
+          emoji: emotion.primaryEmoji,
+          note: text.trim().slice(0, 200),
+        })
+      }
+      if (emotion.riskLevel !== 'none' && onRiskDetected) {
+        onRiskDetected({
+          reason: emotion.riskReasons.join(', '),
+          severity: emotion.riskLevel,
+        })
+      }
+    }
+
+    let botText: string
+
+    try {
+      const chatHistory = messages.map(m => ({ role: m.role, text: m.text }))
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text.trim(), history: chatHistory }),
+      })
+      const data = await res.json()
+      if (data.fallback) throw new Error('fallback')
+      botText = data.reply || generateResponse(emotion, personality, language)
+    } catch {
+      botText = generateResponse(emotion, personality, language)
+    }
+
     const botMsg: ChatMessage = {
       id: `b-${Date.now()}`,
       role: 'bot',
@@ -99,20 +130,7 @@ export function Chatbot({ onMoodDetected, onRiskDetected }: {
       await setItem('mh-chat-history', updated)
     } catch {}
 
-    if (emotion.primary !== 'neutral' && onMoodDetected) {
-      onMoodDetected({
-        emotion: emotion.primary,
-        emoji: emotion.primaryEmoji,
-        note: text.trim().slice(0, 200),
-      })
-    }
-
-    if (emotion.riskLevel !== 'none' && onRiskDetected) {
-      onRiskDetected({
-        reason: emotion.riskReasons.join(', '),
-        severity: emotion.riskLevel,
-      })
-    }
+    riskCallbacks()
   }
 
   return (
