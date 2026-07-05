@@ -146,8 +146,20 @@ export default function Home() {
       await loadGame()
       setTimeout(() => setLoaded(true), 300)
     } else {
-      setPinError('Wrong passphrase. Try again.')
+      setPinError('Wrong passphrase.')
     }
+  }
+
+  function handleReset() {
+    localStorage.removeItem('gv-vault-salt')
+    localStorage.removeItem('gv-vault')
+    localStorage.removeItem('gv-game')
+    localStorage.removeItem('gv-moods')
+    localStorage.removeItem('gv-journal')
+    localStorage.removeItem('gv-premium')
+    setPinInput('lrx')
+    setPinError('')
+    setIsNew(true)
   }
 
   function handleLock() {
@@ -242,11 +254,25 @@ export default function Home() {
             autoFocus
           />
 
-          {pinError && <p className="text-xs text-red-400">{pinError}</p>}
+          {pinError && (
+            <p className="text-xs text-red-400">
+              {pinError}
+              {!isNew && (
+                <button onClick={handleReset} className="ml-2 underline text-zinc-500 hover:text-zinc-300">
+                  Reset garden?
+                </button>
+              )}
+            </p>
+          )}
 
           <Button onClick={handlePinSubmit} className="w-full" size="lg">
             {isNew ? 'Create Garden' : 'Enter Garden'}
           </Button>
+          {!isNew && (
+            <button onClick={handleReset} className="text-[10px] text-zinc-700 hover:text-zinc-500 transition-colors">
+              Forgot passphrase? Start fresh
+            </button>
+          )}
         </div>
       </main>
     )
