@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Sparkles, TreePine, MessageCircle, BarChart3, Book, Lock, Crown } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Sparkles, TreePine, MessageCircle, BarChart3, Book, Lock, Crown, ChevronDown, Flame } from 'lucide-react'
 import { unlockStorage, lockStorage, isUnlocked, isVaultCreated } from '@/lib/encrypted-storage'
-import { getGame, addPlant, getLevelName, getLevelIndex, addXp, saveGame, checkStreak, type PlantType } from '@/lib/game-storage'
-import { isPremium, enablePremium, disablePremium } from '@/lib/premium'
+import { getGame, addPlant, getLevelName, getLevelIndex, addXp, saveGame, checkStreak, type PlantType, type GameState } from '@/lib/game-storage'
+import { isPremium, enablePremium } from '@/lib/premium'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardTitle, CardHeader } from '@/components/ui/card'
 import { GardenScene } from '@/components/garden-scene'
 import { NpcCamera } from '@/components/npc-camera'
 import { NpcChat } from '@/components/npc-chat'
@@ -15,7 +15,7 @@ import { QuestsPanel } from '@/components/quests-panel'
 import { MoodTracker } from '@/components/mood-tracker'
 import { Journal } from '@/components/journal'
 import { EmergencyButton } from '@/components/emergency-button'
-import type { Emotion, ChatMessage } from '@/types/emotion'
+import type { Emotion } from '@/types/emotion'
 
 type Tab = 'garden' | 'spirit' | 'dashboard' | 'tracker' | 'journal'
 
@@ -32,36 +32,83 @@ const PLANT_TYPES: PlantType[] = [
 ]
 
 const PLANT_LABELS: Record<PlantType, string> = {
-  sunflower: '🌻 Sunflower',
-  rose: '🌹 Rose',
-  lotus: '🪷 Lotus',
-  cherry: '🌸 Cherry Blossom',
-  fern: '🌿 Fern',
-  hibiscus: '🌺 Hibiscus',
-  moonflower: '🌙 Moonflower',
-  starlily: '⭐ Star Lily',
+  sunflower: '🌻 Sunflower', rose: '🌹 Rose', lotus: '🪷 Lotus',
+  cherry: '🌸 Cherry Blossom', fern: '🌿 Fern', hibiscus: '🌺 Hibiscus',
+  moonflower: '🌙 Moonflower', starlily: '⭐ Star Lily',
 }
 
-const XP_REWARDS: Record<string, number> = {
-  mood: 15,
-  chat: 10,
-  journal: 20,
-  plant: 25,
+function Confetti() {
+  const colors = ['#52B788', '#95D5B2', '#C8B6FF', '#FBBF24', '#FB7185', '#67E8F9']
+  const pieces = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    color: colors[i % colors.length],
+    left: Math.random() * 100,
+    delay: Math.random() * 0.5,
+    duration: 2 + Math.random() * 2,
+    size: 5 + Math.random() * 6,
+    rotation: Math.random() * 360,
+  }))
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[100]">
+      {pieces.map(p => (
+        <div
+          key={p.id}
+          className="confetti-piece"
+          style={{
+            left: `${p.left}%`,
+            top: '-10px',
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+            transform: `rotate(${p.rotation}deg)`,
+            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+function LevelUpModal({ level, name, onClose }: { level: number; name: string; onClose: () => void }) {
+  const [showConfetti, setShowConfetti] = useState(false)
+  useEffect(() => {
+    setShowConfetti(true)
+    const t = setTimeout(onClose, 3500)
+    return () => clearTimeout(t)
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 animate-fade-in">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
+      {showConfetti && <Confetti />}
+      <div className="relative z-10 text-center animate-scale-in">
+        <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-500/30 to-spirit/30 flex items-center justify-center border border-emerald-500/30 animate-bloom">
+          <Crown size={40} className="text-yellow-400 animate-glow-soft" />
+        </div>
+        <h2 className="font-plus text-2xl font-bold text-zinc-100 mb-1">Level Up!</h2>
+        <p className="text-lg gradient-text font-bold mb-1">You reached {name}</p>
+        <p className="text-sm text-zinc-400">The garden celebrates your growth</p>
+      </div>
+    </div>
+  )
 }
 
 export default function Home() {
   const [unlocked, setUnlocked] = useState(false)
   const [showPin, setShowPin] = useState(false)
-  const [pinInput, setPinInput] = useState(['', '', '', ''])
+  const [pinInput, setPinInput] = useState('lrx')
   const [pinError, setPinError] = useState('')
   const [isNew, setIsNew] = useState(false)
   const [tab, setTab] = useState<Tab>('garden')
+  const [prevTab, setPrevTab] = useState<Tab>('garden')
   const [emotion, setEmotion] = useState<Emotion>('neutral')
-  const [confidence, setConfidence] = useState(0.5)
-  const [gameState, setGameState] = useState<Awaited<ReturnType<typeof getGame>> | null>(null)
-  const [chats, setChats] = useState(0)
   const [processing, setProcessing] = useState(false)
+  const [gameState, setGameState] = useState<GameState | null>(null)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'info' | 'premium' } | null>(null)
+  const [levelUp, setLevelUp] = useState<{ level: number; name: string } | null>(null)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     const created = isVaultCreated()
@@ -70,7 +117,9 @@ export default function Home() {
     if (created && isUnlocked()) {
       setUnlocked(true)
       setShowPin(false)
-      loadGame()
+      loadGame().then(() => setLoaded(true))
+    } else if (!created) {
+      setLoaded(true)
     }
   }, [])
 
@@ -87,18 +136,17 @@ export default function Home() {
   }
 
   async function handlePinSubmit() {
-    const pin = pinInput.join('')
-    if (pin.length !== 4) { setPinError('Enter a 4-digit PIN'); return }
+    const pin = pinInput.trim()
+    if (!pin) { setPinError('Enter a passphrase'); return }
     const ok = await unlockStorage(pin)
     if (ok) {
       setUnlocked(true)
       setShowPin(false)
       setPinError('')
-      setPinInput(['', '', '', ''])
-      loadGame()
+      await loadGame()
+      setTimeout(() => setLoaded(true), 300)
     } else {
-      setPinError('Wrong PIN. Try again.')
-      setPinInput(['', '', '', ''])
+      setPinError('Wrong passphrase. Try again.')
     }
   }
 
@@ -106,35 +154,18 @@ export default function Home() {
     lockStorage()
     setUnlocked(false)
     setShowPin(true)
+    setLoaded(false)
   }
 
   function handleMoodDetected(mood: Emotion, conf: number) {
     setEmotion(mood)
-    setConfidence(conf)
-    setTab('spirit')
-    showToast(`Mood detected: ${mood}`, 'success')
+    switchTab('spirit')
+    showToast(`Spirit senses: ${mood}`, 'success')
   }
 
-  function handlePinDigit(idx: number, val: string) {
-    if (val && !/^\d$/.test(val)) return
-    const next = [...pinInput]
-    next[idx] = val
-    setPinInput(next)
-    setPinError('')
-    if (val && idx < 3) {
-      const nextInput = document.querySelector<HTMLInputElement>(`[data-pin="${idx + 1}"]`)
-      nextInput?.focus()
-    }
-    if (val && idx === 3) {
-      setTimeout(() => handlePinSubmit(), 100)
-    }
-  }
-
-  function handlePinKey(idx: number, key: string) {
-    if (key === 'Backspace' && !pinInput[idx] && idx > 0) {
-      const prevInput = document.querySelector<HTMLInputElement>(`[data-pin="${idx - 1}"]`)
-      prevInput?.focus()
-    }
+  function switchTab(newTab: Tab) {
+    setPrevTab(tab)
+    setTab(newTab)
   }
 
   function showToast(msg: string, type: 'success' | 'info' | 'premium') {
@@ -146,85 +177,70 @@ export default function Home() {
     game.totalChats += 1
     await saveGame(game)
     setGameState(game)
-    setChats(c => c + 1)
-    showToast('+10 XP for chatting!', 'success')
+    showToast('+10 XP', 'success')
   }, [])
 
   const handleQuestComplete = useCallback(async () => {
     const g = await getGame()
     setGameState(g)
-    showToast('Quest completed!', 'success')
   }, [])
 
   const handleMoodLog = useCallback(async () => {
     const g = await getGame()
     setGameState(g)
-    showToast('+15 XP for logging mood!', 'success')
-  }, [])
-
-  const handleJournalSave = useCallback(async () => {
-    const g = await getGame()
-    setGameState(g)
-    showToast('+20 XP for journaling!', 'success')
   }, [])
 
   async function handleBuyPlant(type: PlantType) {
-    const pref = isPremium() ? PLANT_TYPES.slice(0, 8) : PLANT_TYPES.slice(0, 4)
+    const pref = isPremium() ? PLANT_TYPES : PLANT_TYPES.slice(0, 4)
     if (!pref.includes(type)) {
-      showToast('Premium only! Upgrade to unlock all plants.', 'premium')
+      showToast('Premium only! Tap Crown to unlock.', 'premium')
       return
     }
-    const needed = gameState && (gameState.xp >= 50)
-    if (!needed) {
-      showToast('Need 50 XP to buy a plant!', 'info')
+    if (!gameState || gameState.xp < 25) {
+      showToast('Need 25 XP to plant', 'info')
       return
     }
-
     const g = await addPlant(type)
     setGameState(g)
     const { game } = await addXp(-25)
-    showToast(`Planted a ${type}!`, 'success')
+    showToast(`🌱 Planted ${PLANT_LABELS[type].split(' ')[1] || type}!`, 'success')
   }
+
+  // ─── PIN Screen ────────────────────────────────────────────
 
   if (!unlocked && showPin) {
     return (
-      <main className="min-h-dvh flex flex-col items-center justify-center p-6 bg-gradient-to-b from-zinc-950 via-emerald-950/20 to-zinc-950">
+      <main className="min-h-dvh flex flex-col items-center justify-center p-6 bg-mesh">
         <div className="w-full max-w-xs flex flex-col items-center gap-6">
-          <svg width="64" height="64" viewBox="0 0 100 100" className="spirit-glow">
+          <svg width="72" height="72" viewBox="0 0 100 100" className="spirit-glow">
             <defs>
               <radialGradient id="pinGlow" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#C8B6FF" stopOpacity="0.4" />
                 <stop offset="100%" stopColor="#C8B6FF" stopOpacity="0" />
               </radialGradient>
             </defs>
-            <circle cx="50" cy="50" r="45" fill="url(#pinGlow)" className="animate-glow" />
-            <ellipse cx="50" cy="55" rx="20" ry="18" fill="#C8B6FF" opacity="0.3" />
-            <ellipse cx="43" cy="48" rx="3" ry="4" fill="#2d1b69" opacity="0.8" />
-            <ellipse cx="57" cy="48" rx="3" ry="4" fill="#2d1b69" opacity="0.8" />
-            <path d="M38,58 Q50,68 62,58" fill="none" stroke="#2d1b69" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+            <circle cx="50" cy="50" r="45" fill="url(#pinGlow)" className="animate-glow-pulse" />
+            <ellipse cx="50" cy="55" rx="22" ry="20" fill="#C8B6FF" opacity="0.25" />
+            <ellipse cx="42" cy="47" rx="3" ry="4.5" fill="#1a1040" opacity="0.8" />
+            <ellipse cx="58" cy="47" rx="3" ry="4.5" fill="#1a1040" opacity="0.8" />
+            <path d="M36,58 Q50,70 64,58" fill="none" stroke="#1a1040" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
           </svg>
 
           <h1 className="font-plus text-2xl font-bold gradient-text text-center">Garden of Solace</h1>
 
-          <p className="text-sm text-zinc-400 text-center">
-            {isNew ? 'Create a 4-digit PIN to secure your garden' : 'Enter your PIN to enter the garden'}
+          <p className="text-sm text-zinc-500 text-center">
+            {isNew ? 'Create a passphrase to secure your garden' : 'Welcome back to your garden'}
           </p>
 
-          <div className="flex gap-3">
-            {pinInput.map((digit, idx) => (
-              <input
-                key={idx}
-                data-pin={idx}
-                type="password"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={e => handlePinDigit(idx, e.target.value)}
-                onKeyDown={e => handlePinKey(idx, e.key)}
-                className="w-12 h-14 text-center text-xl font-bold rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 transition-all"
-              />
-            ))}
-          </div>
+          <input
+            type="password"
+            value={pinInput}
+            onChange={e => { setPinInput(e.target.value); setPinError('') }}
+            onKeyDown={e => e.key === 'Enter' && handlePinSubmit()}
+            placeholder="Passphrase"
+            className="w-full h-12 text-center text-lg tracking-wider rounded-2xl bg-zinc-900/60 border border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/50 focus:border-emerald-600/50 transition-all"
+            autoFocus
+          />
 
           {pinError && <p className="text-xs text-red-400">{pinError}</p>}
 
@@ -238,114 +254,160 @@ export default function Home() {
 
   if (!unlocked) return null
 
+  // ─── Main Game ────────────────────────────────────────────
+
   return (
-    <main className="min-h-dvh pb-20 bg-gradient-to-b from-zinc-950 via-emerald-950/10 to-zinc-950">
-      <div className="max-w-lg mx-auto px-4 pt-4 pb-6 space-y-4">
-        <header className="flex items-center justify-between">
+    <main className="min-h-dvh pb-24 bg-mesh">
+      {levelUp && <LevelUpModal level={levelUp.level} name={levelUp.name} onClose={() => setLevelUp(null)} />}
+
+      <div className="max-w-lg mx-auto px-4 pt-5 pb-6 space-y-4">
+        {/* Header */}
+        <header className={`flex items-center justify-between ${loaded ? 'animate-slide-down' : 'opacity-0'}`}>
           <div>
-            <h1 className="font-plus text-lg font-bold gradient-text">Garden of Solace</h1>
+            <h1 className="font-plus text-xl font-bold gradient-text">Garden of Solace</h1>
             {gameState && (
-              <p className="text-[10px] text-zinc-500">
-                {getLevelName(gameState.xp)} · {gameState.xp} XP · {gameState.streak} day streak
+              <p className="text-[10px] text-zinc-600 flex items-center gap-1.5 mt-0.5">
+                <span>{getLevelName(gameState.xp)}</span>
+                <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                <span>{gameState.xp} XP</span>
+                <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                <span className="flex items-center gap-0.5">
+                  <Flame size={10} className="text-orange-500" /> {gameState.streak} day{gameState.streak !== 1 ? 's' : ''}
+                </span>
               </p>
             )}
           </div>
           <div className="flex items-center gap-2">
             {isPremium() ? (
-              <span className="text-[10px] text-amber-400 flex items-center gap-1">
-                <Crown size={12} /> Premium
+              <span className="text-[10px] text-amber-400 flex items-center gap-1 bg-amber-900/20 px-2.5 py-1 rounded-full">
+                <Crown size={10} /> Premium
               </span>
             ) : (
-              <Button
-                size="sm"
-                variant="premium"
-                className="text-[10px] h-7 px-2"
-                onClick={() => { enablePremium(); showToast('Premium unlocked for testing!', 'premium'); loadGame() }}
+              <button
+                onClick={() => { enablePremium(); showToast('✨ Premium unlocked!', 'premium'); loadGame() }}
+                className="text-[10px] text-amber-500 flex items-center gap-1 bg-amber-900/10 hover:bg-amber-900/20 px-2.5 py-1 rounded-full transition-colors"
               >
-                <Crown size={10} className="mr-1" /> Premium
-              </Button>
+                <Crown size={10} /> Premium
+              </button>
             )}
-            <button onClick={handleLock} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400">
+            <button onClick={handleLock} className="p-1.5 rounded-lg hover:bg-zinc-800/50 text-zinc-500 hover:text-zinc-300 transition-colors">
               <Lock size={14} />
             </button>
           </div>
         </header>
 
+        {/* Processing indicator */}
         {processing && (
-          <div className="text-center py-2">
-            <p className="text-xs text-zinc-400 animate-pulse">Spirit reading your expression...</p>
+          <div className="text-center py-2 animate-fade-in">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-spirit/10 border border-spirit/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-spirit animate-glow-soft" />
+              <p className="text-xs text-spirit/80">Spirit reading your expression...</p>
+            </div>
           </div>
         )}
 
-        <GardenScene
-          plants={gameState?.plants || []}
-          onToggle={() => setTab(tab === 'garden' ? 'tracker' : 'garden')}
-        />
+        {/* Garden Scene */}
+        <div className={`${loaded ? 'animate-slide-up' : 'opacity-0'}`}>
+          <GardenScene
+            plants={gameState?.plants || []}
+            onToggle={() => switchTab(tab === 'garden' ? 'tracker' : 'garden')}
+          />
+        </div>
 
-        {tab === 'garden' && (
-          <Card>
-            <div className="flex flex-wrap gap-1.5">
-              {(isPremium() ? PLANT_TYPES : PLANT_TYPES.slice(0, 4)).map(type => (
-                <button
-                  key={type}
-                  onClick={() => handleBuyPlant(type)}
-                  disabled={!gameState || gameState.xp < 25}
-                  className="text-xs px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 disabled:opacity-30 transition-colors"
-                >
-                  {PLANT_LABELS[type]}
-                </button>
-              ))}
+        {/* Plant Shop */}
+        {tab === 'garden' && loaded && (
+          <div className="animate-slide-up">
+            <Card className="p-4">
+              <CardHeader className="mb-3">
+                <CardTitle className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Plant Nursery</CardTitle>
+                <span className="text-[10px] text-zinc-600">25 XP each</span>
+              </CardHeader>
+              <div className="flex flex-wrap gap-1.5">
+                {(isPremium() ? PLANT_TYPES : PLANT_TYPES.slice(0, 4)).map(type => (
+                  <button
+                    key={type}
+                    onClick={() => handleBuyPlant(type)}
+                    disabled={!gameState || gameState.xp < 25}
+                    className="text-xs px-3 py-1.5 rounded-xl bg-zinc-800/40 hover:bg-zinc-800/80 disabled:opacity-25 disabled:cursor-not-allowed transition-all border border-zinc-800 hover:border-emerald-800/50 active:scale-95"
+                  >
+                    {PLANT_LABELS[type]}
+                  </button>
+                ))}
+              </div>
               {!isPremium() && (
-                <p className="text-[9px] text-amber-600 w-full mt-1">+ 4 more with Premium</p>
+                <p className="text-[9px] text-amber-700 mt-2 text-center">✦ 4 premium plants with Crown</p>
               )}
-            </div>
-          </Card>
-        )}
-
-        {tab === 'spirit' && (
-          <Card>
-            <NpcCamera onMoodDetected={handleMoodDetected} disabled={processing} setProcessing={setProcessing} />
-            <div className="mt-4">
-              <NpcChat emotion={emotion} onChatComplete={handleChatComplete} />
-            </div>
-          </Card>
-        )}
-
-        {tab === 'dashboard' && (
-          <div className="space-y-3">
-            <Dashboard />
-            <QuestsPanel onQuestComplete={handleQuestComplete} />
+            </Card>
           </div>
         )}
 
-        {tab === 'tracker' && (
-          <Card>
-            <MoodTracker onLog={handleMoodLog} />
-          </Card>
+        {/* Spirit Tab */}
+        {tab === 'spirit' && loaded && (
+          <div className="animate-slide-up">
+            <Card className="p-4">
+              <div className="flex flex-col items-center gap-4">
+                <NpcCamera onMoodDetected={handleMoodDetected} disabled={processing} setProcessing={setProcessing} />
+                <div className="w-full border-t border-zinc-800/50 pt-4">
+                  <NpcChat emotion={emotion} onChatComplete={handleChatComplete} />
+                </div>
+              </div>
+            </Card>
+          </div>
         )}
 
-        {tab === 'journal' && (
-          <Card>
-            <Journal />
-          </Card>
+        {/* Dashboard */}
+        {tab === 'dashboard' && loaded && (
+          <div className="animate-slide-up">
+            <Dashboard />
+          </div>
+        )}
+
+        {/* Dashboard - Quests */}
+        {tab === 'dashboard' && loaded && (
+          <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <Card className="p-4">
+              <QuestsPanel onQuestComplete={handleQuestComplete} />
+            </Card>
+          </div>
+        )}
+
+        {/* Mood Tracker */}
+        {tab === 'tracker' && loaded && (
+          <div className="animate-slide-up">
+            <Card className="p-4">
+              <MoodTracker onLog={handleMoodLog} />
+            </Card>
+          </div>
+        )}
+
+        {/* Journal */}
+        {tab === 'journal' && loaded && (
+          <div className="animate-slide-up">
+            <Card className="p-4">
+              <Journal />
+            </Card>
+          </div>
         )}
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-md">
+      {/* Bottom Tab Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 glass-strong border-t border-white/5">
         <div className="max-w-lg mx-auto flex">
           {TABS.map(t => {
             const Icon = t.icon
+            const isActive = tab === t.key
             return (
               <button
                 key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] transition-all ${
-                  tab === t.key
-                    ? 'text-emerald-400'
-                    : 'text-zinc-600 hover:text-zinc-400'
+                onClick={() => switchTab(t.key)}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-[10px] transition-all duration-200 relative ${
+                  isActive ? 'text-emerald-400' : 'text-zinc-600 hover:text-zinc-400'
                 }`}
               >
-                <Icon size={18} />
+                {isActive && (
+                  <span className="absolute -top-px left-1/4 right-1/4 h-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-spirit" />
+                )}
+                <Icon size={18} className={isActive ? 'animate-float' : ''} />
                 {t.label}
               </button>
             )
@@ -355,18 +417,22 @@ export default function Home() {
 
       <EmergencyButton />
 
+      {/* Toast */}
       {toast && (
         <div
-          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-sm shadow-2xl animate-bloom ${
+          className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-2xl text-sm shadow-2xl animate-slide-down ${
             toast.type === 'success'
-              ? 'bg-emerald-900/90 text-emerald-200 border border-emerald-800'
+              ? 'bg-emerald-900/80 text-emerald-200 border border-emerald-800/50 backdrop-blur-md'
               : toast.type === 'premium'
-                ? 'bg-amber-900/90 text-amber-200 border border-amber-800'
-                : 'bg-zinc-800/90 text-zinc-200 border border-zinc-700'
+                ? 'bg-amber-900/80 text-amber-200 border border-amber-800/50 backdrop-blur-md'
+                : 'bg-zinc-800/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-md'
           }`}
         >
-          {toast.type === 'premium' && <Crown size={14} className="inline mr-1.5" />}
-          {toast.msg}
+          <div className="flex items-center gap-2">
+            {toast.type === 'premium' && <Crown size={14} className="text-amber-400" />}
+            {toast.type === 'success' && <Sparkles size={14} className="text-emerald-400" />}
+            {toast.msg}
+          </div>
         </div>
       )}
     </main>
